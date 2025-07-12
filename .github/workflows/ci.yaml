@@ -1,0 +1,98 @@
+name: Build and Release Arch Linux WSL
+
+on:
+  pull_request:
+    branches: [ "main" ]
+
+  schedule:
+    - cron: '0 0 1 * *'
+  
+  workflow_dispatch:
+
+jobs:
+  lint:
+    name: Linting
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    strategy:
+      matrix:
+        linter: [ "codespell", "markdownlint", "shellcheck" ]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install ${{ matrix.linter }}
+        run: pacman -Syu --needed --noconfirm ${{ matrix.linter }}
+
+      - name: Run Codespell
+        if: matrix.linter == 'codespell'
+        run: codespell --enable-colors
+
+      - name: Run Markdownlint
+        if: matrix.linter == 'markdownlint'
+        run: mdl --style .mdl_style.rb .
+
+      - name: Run Shellcheck
+        if: matrix.linter == 'shellcheck'
+        run: find . -name '*.sh*' -exec shellcheck --color=always {} +
+  setup-vars:
+    name: Setup Variables
+    runs-on: ubuntu-latest
+    outputs:
+      image_version: ${{ steps.vars.outputs.image_version }}
+    steps:
+      - id: vars
+        name: Generate dynamic variables
+        run: |
+          IMAGE_VERSION=$(date +'%Y.%m.%d')."${{ github.run_id }}"
+          echo "image_version=${IMAGE_VERSION}" >> $GITHUB_OUTPUT
+  build:
+    name: Build and Sign
+    needs: [setup-vars]
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      COSIGN_YES: "true"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install dependencies
+        run: pacman -Syu --needed --noconfirm make devtools fakechroot fakeroot cosign qemu-user-static qemu-user-static-binfmt
+      - name: Build image
+        run: make build IMAGE_VERSION="${{ needs.setup-vars.outputs.image_version }}"
+      - name: Sign artifact with Cosign
+        run: |
+          cosign sign-blob "workdir/output/archlinux-${{ needs.setup-vars.outputs.image_version }}.wsl" --bundle "workdir/output/archlinux-${{ needs.setup-vars.outputs.image_version }}.wsl.bundle"
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wsl-image-artifact
+          path: workdir/output/*
+          retention-days: 1
+          compression-level: 0
+
+  release:
+    name: Create GitHub Release
+    if: github.event_name == 'schedule'
+    needs: [setup-vars]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: wsl-image-artifact
+      - name: Create Release and Upload Assets
+        uses: softprops/action-gh-release@v2.0.6
+        with:
+          tag_name: v${{ needs.setup-vars.outputs.image_version }}
+          name: Release ${{ needs.setup-vars.outputs.image_version }}
+          body: "Automated release for Arch Linux on WSL."
+          files: |
+            archlinuxarm-aarch64-${{ needs.setup-vars.outputs.image_version }}.wsl
+            archlinuxarm-aarch64-${{ needs.setup-vars.outputs.image_version }}.wsl.SHA256
+            archlinuxarm-aarch64-${{ needs.setup-vars.outputs.image_version }}.wsl.bundle
