@@ -65,7 +65,7 @@ jobs:
         run: make build IMAGE_VERSION="${{ needs.setup-vars.outputs.image_version }}"
       - name: Sign artifact with Cosign
         run: |
-          cosign sign-blob "workdir/output/archlinux-${{ needs.setup-vars.outputs.image_version }}.wsl" --bundle "workdir/output/archlinux-${{ needs.setup-vars.outputs.image_version }}.wsl.bundle"
+          cosign sign-blob "workdir/output/archlinuxarm-aarch64-${{ needs.setup-vars.outputs.image_version }}.wsl" --bundle "workdir/output/archlinux-${{ needs.setup-vars.outputs.image_version }}.wsl.bundle"
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
