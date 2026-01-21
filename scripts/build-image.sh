@@ -19,8 +19,9 @@ mkdir -vp "$BUILDDIR/alpm-hooks/usr/share/libalpm/hooks"
 find /usr/share/libalpm/hooks -exec ln -sf /dev/null "$BUILDDIR/alpm-hooks"{} \;
 
 mkdir -vp "$BUILDDIR/var/lib/pacman/" "$OUTPUTDIR"
+install -Dm 644 "/usr/share/devtools/pacman.conf.d/extra.conf" "$BUILDDIR/etc/pacman.conf"
 
-sed 's/Include = /&rootfs/g' < "/usr/share/devtools/pacman.conf.d/extra.conf" > "$WORKDIR/pacman.conf"
+sed 's/Include = /&rootfs/g' < "$BUILDDIR/etc/pacman.conf" > "$WORKDIR/pacman.conf"
 
 cp --recursive --preserve=timestamps rootfs/* "$BUILDDIR/"
 
@@ -41,7 +42,7 @@ fakechroot -- fakeroot -- \
         --lsign-key builder@archlinuxarm.org
 
 fakechroot -- fakeroot -- \
-    pacman -Sy -r "$BUILDDIR" \
+    pacman -Sy --disable-sandbox-filesystem  -r "$BUILDDIR" \
         --noconfirm --dbpath "$BUILDDIR/var/lib/pacman" \
         --arch "$ARCH" \
         --config "$WORKDIR/pacman.conf" \
@@ -53,7 +54,7 @@ fakechroot -- fakeroot -- \
 declare -r TMPPACKAGEDIR="$TMPDIR/tmp-package"
 mkdir -vp "$TMPPACKAGEDIR/var/lib/pacman/"
 fakechroot -- fakeroot -- \
-    pacman -Sy -r "$TMPPACKAGEDIR" \
+    pacman -Sy --disable-sandbox-filesystem  -r "$TMPPACKAGEDIR" \
         --noconfirm --dbpath "$TMPPACKAGEDIR/var/lib/pacman" \
         --arch "$ARCH" \
         --config "$WORKDIR/pacman.conf" \
