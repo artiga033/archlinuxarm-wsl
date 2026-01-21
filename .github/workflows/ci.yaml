@@ -12,8 +12,8 @@ on:
 jobs:
   lint:
     name: Linting
-    runs-on: ubuntu-24.04-arm
-    container: nevuly/archlinux:latest
+    runs-on: ubuntu-24.04
+    container: archlinux:latest
     strategy:
       matrix:
         linter: [ "codespell", "markdownlint", "shellcheck" ]
