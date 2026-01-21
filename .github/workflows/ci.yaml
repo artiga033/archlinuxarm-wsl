@@ -12,8 +12,8 @@ on:
 jobs:
   lint:
     name: Linting
-    runs-on: ubuntu-latest
-    container: archlinux:latest
+    runs-on: ubuntu-24.04-arm
+    container: nevuly/archlinux:latest
     strategy:
       matrix:
         linter: [ "codespell", "markdownlint", "shellcheck" ]
@@ -60,7 +60,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
       - name: Install dependencies
-        run: pacman -Syu --needed --noconfirm make devtools fakechroot fakeroot cosign qemu-user-static qemu-user-static-binfmt
+        run: pacman -Syu --needed --noconfirm make devtools fakechroot fakeroot cosign
       - name: Build image
         run: make build IMAGE_VERSION="${{ needs.setup-vars.outputs.image_version }}"
       - name: Sign artifact with Cosign
