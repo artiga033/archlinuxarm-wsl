@@ -8,6 +8,10 @@ on:
     - cron: '0 0 1 * *'
   
   workflow_dispatch:
+    inputs:
+      release:
+        type: boolean
+        default: false
 
 jobs:
   lint:
@@ -76,7 +80,7 @@ jobs:
 
   release:
     name: Create GitHub Release
-    if: github.event_name == 'schedule'
+    if: github.event_name == 'schedule' || inputs.release
     needs: [setup-vars]
     runs-on: ubuntu-latest
     permissions:
