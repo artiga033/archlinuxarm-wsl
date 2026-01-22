@@ -8,7 +8,7 @@ declare -r BUILDDIR="$WORKDIR/build"
 declare -r OUTPUTDIR="$WORKDIR/output"
 declare -r IMAGE_VERSION="$2"
 # This pacman.conf is used by the host pacman, but installs into the rootfs.
-declare -r PACMAN_CONF="$PACMAN_CONF"
+declare -r PACMAN_CONF="$WORKDIR/pacman.conf"
 # This folder is used as `--gpgdir` for pacman, so that it trusts archlinuxarm's keyring.
 declare -r KEYRING_DIR="$WORKDIR/alarm-keyring"
 # This is used to install some tmp packages that should not be included in the final image.
