@@ -81,7 +81,7 @@ jobs:
   release:
     name: Create GitHub Release
     if: github.event_name == 'schedule' || inputs.release
-    needs: [setup-vars]
+    needs: [build]
     runs-on: ubuntu-latest
     permissions:
       contents: write
