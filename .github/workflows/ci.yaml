@@ -8,11 +8,15 @@ on:
     - cron: '0 0 1 * *'
   
   workflow_dispatch:
+    inputs:
+      release:
+        type: boolean
+        default: false
 
 jobs:
   lint:
     name: Linting
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container: archlinux:latest
     strategy:
       matrix:
@@ -49,8 +53,8 @@ jobs:
   build:
     name: Build and Sign
     needs: [setup-vars]
-    runs-on: ubuntu-latest
-    container: archlinux:latest
+    runs-on: ubuntu-24.04-arm
+    container: nevuly/archlinux:latest
     permissions:
       id-token: write
       contents: read
@@ -60,12 +64,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
       - name: Install dependencies
-        run: pacman -Syu --needed --noconfirm make devtools fakechroot fakeroot cosign qemu-user-static qemu-user-static-binfmt
+        run: pacman -Syu --needed --noconfirm make devtools fakechroot fakeroot cosign
       - name: Build image
         run: make build IMAGE_VERSION="${{ needs.setup-vars.outputs.image_version }}"
       - name: Sign artifact with Cosign
         run: |
-          cosign sign-blob "workdir/output/archlinux-${{ needs.setup-vars.outputs.image_version }}.wsl" --bundle "workdir/output/archlinux-${{ needs.setup-vars.outputs.image_version }}.wsl.bundle"
+          cosign sign-blob "workdir/output/archlinuxarm-aarch64-${{ needs.setup-vars.outputs.image_version }}.wsl" --bundle "workdir/output/archlinuxarm-aarch64-${{ needs.setup-vars.outputs.image_version }}.wsl.bundle"
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
@@ -76,7 +80,7 @@ jobs:
 
   release:
     name: Create GitHub Release
-    if: github.event_name == 'schedule'
+    if: github.event_name == 'schedule' || inputs.release
     needs: [setup-vars]
     runs-on: ubuntu-latest
     permissions:

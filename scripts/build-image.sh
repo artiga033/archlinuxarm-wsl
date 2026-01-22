@@ -19,46 +19,47 @@ mkdir -vp "$BUILDDIR/alpm-hooks/usr/share/libalpm/hooks"
 find /usr/share/libalpm/hooks -exec ln -sf /dev/null "$BUILDDIR/alpm-hooks"{} \;
 
 mkdir -vp "$BUILDDIR/var/lib/pacman/" "$OUTPUTDIR"
+install -Dm 644 "/usr/share/devtools/pacman.conf.d/extra.conf" "$BUILDDIR/etc/pacman.conf"
 
-sed 's/Include = /&rootfs/g' < "/usr/share/devtools/pacman.conf.d/extra.conf" > "$WORKDIR/pacman.conf"
+sed 's/Include = /&rootfs/g' < "$BUILDDIR/etc/pacman.conf" > "$PACMAN_CONF"
 
 cp --recursive --preserve=timestamps rootfs/* "$BUILDDIR/"
 
 fakechroot -- fakeroot -- \
     pacman-key --verbose \
-        --config "$WORKDIR/pacman.conf" \
+        --config "$PACMAN_CONF" \
         --gpgdir "$KEYRING_DIR" \
         --init
 fakechroot -- fakeroot -- \
     pacman-key --verbose \
-        --config "$WORKDIR/pacman.conf" \
+        --config "$PACMAN_CONF" \
         --gpgdir "$KEYRING_DIR" \
         -a <(curl -Lss https://raw.githubusercontent.com/archlinuxarm/PKGBUILDs/refs/heads/master/core/archlinuxarm-keyring/archlinuxarm.gpg)
 fakechroot -- fakeroot -- \
     pacman-key --verbose \
-        --config "$WORKDIR/pacman.conf" \
+        --config "$PACMAN_CONF" \
         --gpgdir "$KEYRING_DIR" \
         --lsign-key builder@archlinuxarm.org
 
 fakechroot -- fakeroot -- \
-    pacman -Sy -r "$BUILDDIR" \
+    pacman -Sy --disable-sandbox-filesystem -r "$BUILDDIR" \
         --noconfirm --dbpath "$BUILDDIR/var/lib/pacman" \
         --arch "$ARCH" \
-        --config "$WORKDIR/pacman.conf" \
+        --config "$PACMAN_CONF" \
         --noscriptlet \
-        --gpgdir $KEYRING_DIR \
+        --gpgdir "$KEYRING_DIR" \
         --hookdir "$BUILDDIR/alpm-hooks/usr/share/libalpm/hooks/" base archlinuxarm-keyring
 
 # install fakeroot and fakechroot to some other directory, so that they do not pollute the final rootfs.
 declare -r TMPPACKAGEDIR="$TMPDIR/tmp-package"
 mkdir -vp "$TMPPACKAGEDIR/var/lib/pacman/"
 fakechroot -- fakeroot -- \
-    pacman -Sy -r "$TMPPACKAGEDIR" \
+    pacman -Sy --disable-sandbox-filesystem -r "$TMPPACKAGEDIR" \
         --noconfirm --dbpath "$TMPPACKAGEDIR/var/lib/pacman" \
         --arch "$ARCH" \
-        --config "$WORKDIR/pacman.conf" \
+        --config "$PACMAN_CONF" \
         --noscriptlet \
-        --gpgdir $KEYRING_DIR \
+        --gpgdir "$KEYRING_DIR" \
         --hookdir "$BUILDDIR/alpm-hooks/usr/share/libalpm/hooks/" fakeroot fakechroot
 ln -svf "$TMPPACKAGEDIR/usr/lib/libfakeroot" "$BUILDDIR/usr/lib/libfakeroot"
 
