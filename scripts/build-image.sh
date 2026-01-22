@@ -42,7 +42,7 @@ fakechroot -- fakeroot -- \
         --lsign-key builder@archlinuxarm.org
 
 fakechroot -- fakeroot -- \
-    pacman -Sy --disable-sandbox-filesystem  -r "$BUILDDIR" \
+    pacman -Sy --disable-sandbox-filesystem -r "$BUILDDIR" \
         --noconfirm --dbpath "$BUILDDIR/var/lib/pacman" \
         --arch "$ARCH" \
         --config "$PACMAN_CONF" \
@@ -54,7 +54,7 @@ fakechroot -- fakeroot -- \
 declare -r TMPPACKAGEDIR="$TMPDIR/tmp-package"
 mkdir -vp "$TMPPACKAGEDIR/var/lib/pacman/"
 fakechroot -- fakeroot -- \
-    pacman -Sy --disable-sandbox-filesystem  -r "$TMPPACKAGEDIR" \
+    pacman -Sy --disable-sandbox-filesystem -r "$TMPPACKAGEDIR" \
         --noconfirm --dbpath "$TMPPACKAGEDIR/var/lib/pacman" \
         --arch "$ARCH" \
         --config "$PACMAN_CONF" \
