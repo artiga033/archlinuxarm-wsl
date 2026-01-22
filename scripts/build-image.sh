@@ -8,7 +8,7 @@ declare -r BUILDDIR="$WORKDIR/build"
 declare -r OUTPUTDIR="$WORKDIR/output"
 declare -r IMAGE_VERSION="$2"
 # This pacman.conf is used by the host pacman, but installs into the rootfs.
-declare -r PACMAN_CONF="$WORKDIR/pacman.conf"
+declare -r PACMAN_CONF="$PACMAN_CONF"
 # This folder is used as `--gpgdir` for pacman, so that it trusts archlinuxarm's keyring.
 declare -r KEYRING_DIR="$WORKDIR/alarm-keyring"
 # This is used to install some tmp packages that should not be included in the final image.
@@ -21,23 +21,23 @@ find /usr/share/libalpm/hooks -exec ln -sf /dev/null "$BUILDDIR/alpm-hooks"{} \;
 mkdir -vp "$BUILDDIR/var/lib/pacman/" "$OUTPUTDIR"
 install -Dm 644 "/usr/share/devtools/pacman.conf.d/extra.conf" "$BUILDDIR/etc/pacman.conf"
 
-sed 's/Include = /&rootfs/g' < "$BUILDDIR/etc/pacman.conf" > "$WORKDIR/pacman.conf"
+sed 's/Include = /&rootfs/g' < "$BUILDDIR/etc/pacman.conf" > "$PACMAN_CONF"
 
 cp --recursive --preserve=timestamps rootfs/* "$BUILDDIR/"
 
 fakechroot -- fakeroot -- \
     pacman-key --verbose \
-        --config "$WORKDIR/pacman.conf" \
+        --config "$PACMAN_CONF" \
         --gpgdir "$KEYRING_DIR" \
         --init
 fakechroot -- fakeroot -- \
     pacman-key --verbose \
-        --config "$WORKDIR/pacman.conf" \
+        --config "$PACMAN_CONF" \
         --gpgdir "$KEYRING_DIR" \
         -a <(curl -Lss https://raw.githubusercontent.com/archlinuxarm/PKGBUILDs/refs/heads/master/core/archlinuxarm-keyring/archlinuxarm.gpg)
 fakechroot -- fakeroot -- \
     pacman-key --verbose \
-        --config "$WORKDIR/pacman.conf" \
+        --config "$PACMAN_CONF" \
         --gpgdir "$KEYRING_DIR" \
         --lsign-key builder@archlinuxarm.org
 
@@ -45,9 +45,9 @@ fakechroot -- fakeroot -- \
     pacman -Sy --disable-sandbox-filesystem  -r "$BUILDDIR" \
         --noconfirm --dbpath "$BUILDDIR/var/lib/pacman" \
         --arch "$ARCH" \
-        --config "$WORKDIR/pacman.conf" \
+        --config "$PACMAN_CONF" \
         --noscriptlet \
-        --gpgdir $KEYRING_DIR \
+        --gpgdir "$KEYRING_DIR" \
         --hookdir "$BUILDDIR/alpm-hooks/usr/share/libalpm/hooks/" base archlinuxarm-keyring
 
 # install fakeroot and fakechroot to some other directory, so that they do not pollute the final rootfs.
@@ -57,9 +57,9 @@ fakechroot -- fakeroot -- \
     pacman -Sy --disable-sandbox-filesystem  -r "$TMPPACKAGEDIR" \
         --noconfirm --dbpath "$TMPPACKAGEDIR/var/lib/pacman" \
         --arch "$ARCH" \
-        --config "$WORKDIR/pacman.conf" \
+        --config "$PACMAN_CONF" \
         --noscriptlet \
-        --gpgdir $KEYRING_DIR \
+        --gpgdir "$KEYRING_DIR" \
         --hookdir "$BUILDDIR/alpm-hooks/usr/share/libalpm/hooks/" fakeroot fakechroot
 ln -svf "$TMPPACKAGEDIR/usr/lib/libfakeroot" "$BUILDDIR/usr/lib/libfakeroot"
 
